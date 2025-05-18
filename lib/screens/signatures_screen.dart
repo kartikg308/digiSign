@@ -5,7 +5,7 @@ import '../services/signature_service.dart';
 import '../widgets/signature_pad.dart';
 
 class SignaturesScreen extends StatefulWidget {
-  const SignaturesScreen({Key? key}) : super(key: key);
+  const SignaturesScreen({super.key});
 
   @override
   State<SignaturesScreen> createState() => _SignaturesScreenState();
@@ -158,10 +158,10 @@ class _SignaturesScreenState extends State<SignaturesScreen> {
 
   Widget _buildSignaturesList() {
     if (_signatures.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [const Icon(Icons.brush, size: 64, color: Colors.grey), const SizedBox(height: 16), const Text('No Signatures Yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), const SizedBox(height: 8), const Text('Create your first signature by tapping the + button')],
+          children: [Icon(Icons.brush, size: 64, color: Colors.grey), SizedBox(height: 16), Text('No Signatures Yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), SizedBox(height: 8), Text('Create your first signature by tapping the + button')],
         ),
       );
     }

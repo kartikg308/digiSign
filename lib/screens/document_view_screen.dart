@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -11,7 +13,7 @@ import 'signatures_screen.dart';
 class DocumentViewScreen extends StatefulWidget {
   final Document document;
 
-  const DocumentViewScreen({Key? key, required this.document}) : super(key: key);
+  const DocumentViewScreen({super.key, required this.document});
 
   @override
   State<DocumentViewScreen> createState() => _DocumentViewScreenState();
@@ -150,7 +152,7 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
               right: 16,
               child: Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: const Offset(0, 2))]),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(8), boxShadow: [const BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))]),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,

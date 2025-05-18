@@ -7,7 +7,11 @@ class SignaturePadWidget extends StatefulWidget {
   final Function(Uint8List) onSave;
   final bool allowSaveWithName;
 
-  const SignaturePadWidget({Key? key, required this.onSave, this.allowSaveWithName = false}) : super(key: key);
+  const SignaturePadWidget({
+    super.key,
+    required this.onSave,
+    this.allowSaveWithName = false,
+  });
 
   @override
   State<SignaturePadWidget> createState() => _SignaturePadWidgetState();
@@ -28,13 +32,60 @@ class _SignaturePadWidgetState extends State<SignaturePadWidget> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(height: 300, decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)), child: Signature(key: _signatureKey, color: _penColor, strokeWidth: 3.0, backgroundPainter: null)),
+        Container(
+          height: 300,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Signature(
+            key: _signatureKey,
+            color: _penColor,
+            strokeWidth: 3.0,
+            backgroundPainter: null,
+          ),
+        ),
         const SizedBox(height: 16),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [_buildColorCircle(Colors.black), const SizedBox(width: 12), _buildColorCircle(Colors.blue), const SizedBox(width: 12), _buildColorCircle(Colors.red)]),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildColorCircle(Colors.black),
+            const SizedBox(width: 12),
+            _buildColorCircle(Colors.blue),
+            const SizedBox(width: 12),
+            _buildColorCircle(Colors.red),
+          ],
+        ),
         const SizedBox(height: 16),
-        if (widget.allowSaveWithName) Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Signature Name', hintText: 'Enter a name for this signature', border: OutlineInputBorder()))),
+        if (widget.allowSaveWithName)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Signature Name',
+                hintText: 'Enter a name for this signature',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
         const SizedBox(height: 16),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [ElevatedButton(onPressed: _clearSignature, child: const Text('Clear')), ElevatedButton(onPressed: widget.allowSaveWithName ? _saveSignatureWithName : _saveSignature, child: const Text('Save'))]),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton(
+              onPressed: _clearSignature,
+              child: const Text('Clear'),
+            ),
+            ElevatedButton(
+              onPressed:
+                  widget.allowSaveWithName
+                      ? _saveSignatureWithName
+                      : _saveSignature,
+              child: const Text('Save'),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -46,7 +97,19 @@ class _SignaturePadWidgetState extends State<SignaturePadWidget> {
           _penColor = color;
         });
       },
-      child: Container(width: 40, height: 40, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: _penColor == color ? Colors.grey.shade600 : Colors.transparent, width: 3))),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color:
+                _penColor == color ? Colors.grey.shade600 : Colors.transparent,
+            width: 3,
+          ),
+        ),
+      ),
     );
   }
 
@@ -58,7 +121,9 @@ class _SignaturePadWidgetState extends State<SignaturePadWidget> {
 
   Future<void> _saveSignature() async {
     if (_signatureKey.currentState?.points.isEmpty ?? true) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please draw your signature')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please draw your signature')),
+      );
       return;
     }
 
@@ -70,12 +135,16 @@ class _SignaturePadWidgetState extends State<SignaturePadWidget> {
 
   Future<void> _saveSignatureWithName() async {
     if (_signatureKey.currentState?.points.isEmpty ?? true) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please draw your signature')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please draw your signature')),
+      );
       return;
     }
 
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a name for your signature')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a name for your signature')),
+      );
       return;
     }
 
@@ -96,7 +165,9 @@ class _SignaturePadWidgetState extends State<SignaturePadWidget> {
       ui.Image? image = await _signatureKey.currentState?.getData();
       if (image == null) return null;
 
-      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       if (byteData == null) return null;
 
       return byteData.buffer.asUint8List();

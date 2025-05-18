@@ -15,7 +15,10 @@ class DocumentService {
   // Import document from storage
   Future<Document?> importDocument() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
 
       if (result != null) {
         // Get the selected file
@@ -39,7 +42,12 @@ class DocumentService {
 
         // Create document object
         final now = DateTime.now();
-        final document = Document(name: fileName, path: savedFilePath, dateCreated: now, lastUpdated: now);
+        final document = Document(
+          name: fileName,
+          path: savedFilePath,
+          dateCreated: now,
+          lastUpdated: now,
+        );
 
         // Save to database
         final id = await _dbService.insertDocument(document);
@@ -53,11 +61,17 @@ class DocumentService {
   }
 
   // Add signature to document from raw bytes
-  Future<Document?> addSignatureToDocument(Document document, List<int> signatureImageBytes, Offset position) async {
+  Future<Document?> addSignatureToDocument(
+    Document document,
+    List<int> signatureImageBytes,
+    Offset position,
+  ) async {
     try {
       // Load the PDF document
       final File file = File(document.path);
-      final PdfDocument pdfDocument = PdfDocument(inputBytes: await file.readAsBytes());
+      final PdfDocument pdfDocument = PdfDocument(
+        inputBytes: await file.readAsBytes(),
+      );
 
       // Create a new PDF bitmap image
       final PdfBitmap image = PdfBitmap(signatureImageBytes);
@@ -84,7 +98,10 @@ class DocumentService {
       pdfDocument.dispose();
 
       // Update document in database
-      final updatedDocument = document.copyWith(lastUpdated: DateTime.now(), isSigned: true);
+      final updatedDocument = document.copyWith(
+        lastUpdated: DateTime.now(),
+        isSigned: true,
+      );
       await _dbService.updateDocument(updatedDocument);
 
       return updatedDocument;
@@ -95,7 +112,11 @@ class DocumentService {
   }
 
   // Add saved signature to document
-  Future<Document?> addSavedSignatureToDocument(Document document, model.Signature signature, Offset position) async {
+  Future<Document?> addSavedSignatureToDocument(
+    Document document,
+    model.Signature signature,
+    Offset position,
+  ) async {
     try {
       return await addSignatureToDocument(document, signature.bytes, position);
     } catch (e) {
@@ -105,11 +126,16 @@ class DocumentService {
   }
 
   // Add multiple signatures to document
-  Future<Document?> addMultipleSignaturesToDocument(Document document, List<Map<String, dynamic>> signatures) async {
+  Future<Document?> addMultipleSignaturesToDocument(
+    Document document,
+    List<Map<String, dynamic>> signatures,
+  ) async {
     try {
       // Load the PDF document
       final File file = File(document.path);
-      final PdfDocument pdfDocument = PdfDocument(inputBytes: await file.readAsBytes());
+      final PdfDocument pdfDocument = PdfDocument(
+        inputBytes: await file.readAsBytes(),
+      );
 
       // Add each signature to the document
       for (var signatureData in signatures) {
@@ -148,7 +174,10 @@ class DocumentService {
       pdfDocument.dispose();
 
       // Update document in database
-      final updatedDocument = document.copyWith(lastUpdated: DateTime.now(), isSigned: true);
+      final updatedDocument = document.copyWith(
+        lastUpdated: DateTime.now(),
+        isSigned: true,
+      );
       await _dbService.updateDocument(updatedDocument);
 
       return updatedDocument;
@@ -159,8 +188,14 @@ class DocumentService {
   }
 
   // Get all documents
-  Future<List<Document>> getAllDocuments({String sortBy = 'lastUpdated', bool descending = true}) async {
-    return await _dbService.getAllDocuments(sortBy: sortBy, descending: descending);
+  Future<List<Document>> getAllDocuments({
+    String sortBy = 'lastUpdated',
+    bool descending = true,
+  }) async {
+    return await _dbService.getAllDocuments(
+      sortBy: sortBy,
+      descending: descending,
+    );
   }
 
   // Delete document
