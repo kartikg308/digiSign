@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:ui';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/document.dart';
+import '../models/signature.dart' as model;
 import 'database_service.dart';
 
 class DocumentService {
@@ -50,7 +52,7 @@ class DocumentService {
     }
   }
 
-  // Add signature to document
+  // Add signature to document from raw bytes
   Future<Document?> addSignatureToDocument(Document document, List<int> signatureImageBytes, Offset position) async {
     try {
       // Load the PDF document
@@ -88,6 +90,70 @@ class DocumentService {
       return updatedDocument;
     } catch (e) {
       print('Error adding signature: $e');
+      return null;
+    }
+  }
+
+  // Add saved signature to document
+  Future<Document?> addSavedSignatureToDocument(Document document, model.Signature signature, Offset position) async {
+    try {
+      return await addSignatureToDocument(document, signature.bytes, position);
+    } catch (e) {
+      print('Error adding saved signature: $e');
+      return null;
+    }
+  }
+
+  // Add multiple signatures to document
+  Future<Document?> addMultipleSignaturesToDocument(Document document, List<Map<String, dynamic>> signatures) async {
+    try {
+      // Load the PDF document
+      final File file = File(document.path);
+      final PdfDocument pdfDocument = PdfDocument(inputBytes: await file.readAsBytes());
+
+      // Add each signature to the document
+      for (var signatureData in signatures) {
+        final Uint8List bytes = signatureData['bytes'];
+        final Offset position = signatureData['position'];
+        final int pageIndex = signatureData['pageIndex'] ?? 0;
+
+        // Create a new PDF bitmap image
+        final PdfBitmap image = PdfBitmap(bytes);
+
+        // Get the page to add signature (default to first page if invalid index)
+        PdfPage page;
+        if (pageIndex >= 0 && pageIndex < pdfDocument.pages.count) {
+          page = pdfDocument.pages[pageIndex];
+        } else {
+          page = pdfDocument.pages[0];
+        }
+
+        // Draw the signature on the page at the specified position
+        page.graphics.drawImage(
+          image,
+          Rect.fromLTWH(
+            position.dx,
+            position.dy,
+            100, // Width of signature
+            50, // Height of signature
+          ),
+        );
+      }
+
+      // Save the document
+      final List<int> bytes = await pdfDocument.save();
+      await file.writeAsBytes(bytes);
+
+      // Dispose the document
+      pdfDocument.dispose();
+
+      // Update document in database
+      final updatedDocument = document.copyWith(lastUpdated: DateTime.now(), isSigned: true);
+      await _dbService.updateDocument(updatedDocument);
+
+      return updatedDocument;
+    } catch (e) {
+      print('Error adding multiple signatures: $e');
       return null;
     }
   }

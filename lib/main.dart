@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/signatures_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -34,7 +35,8 @@ class MyApp extends StatelessWidget {
       ),
       darkTheme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark), useMaterial3: true),
       themeMode: ThemeMode.system,
-      home: const DashboardScreen(),
+      initialRoute: '/',
+      routes: {'/': (context) => const DashboardScreen(), '/signatures': (context) => const SignaturesScreen()},
     );
   }
 }

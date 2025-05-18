@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/document.dart';
+import '../models/signature.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -22,6 +23,7 @@ class DatabaseService {
   }
 
   Future<void> _createDb(Database db, int version) async {
+    // Create documents table
     await db.execute('''
       CREATE TABLE documents(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,8 +34,19 @@ class DatabaseService {
         isSigned INTEGER
       )
     ''');
+
+    // Create signatures table
+    await db.execute('''
+      CREATE TABLE signatures(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        bytes BLOB,
+        dateCreated INTEGER
+      )
+    ''');
   }
 
+  // Document operations
   Future<int> insertDocument(Document document) async {
     final db = await database;
     return await db.insert('documents', document.toMap());
@@ -65,5 +78,39 @@ class DatabaseService {
     final List<Map<String, dynamic>> maps = await db.query('documents', orderBy: '$sortBy $order');
 
     return List.generate(maps.length, (i) => Document.fromMap(maps[i]));
+  }
+
+  // Signature operations
+  Future<int> insertSignature(Signature signature) async {
+    final db = await database;
+    return await db.insert('signatures', signature.toMap());
+  }
+
+  Future<int> updateSignature(Signature signature) async {
+    final db = await database;
+    return await db.update('signatures', signature.toMap(), where: 'id = ?', whereArgs: [signature.id]);
+  }
+
+  Future<int> deleteSignature(int id) async {
+    final db = await database;
+    return await db.delete('signatures', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<Signature?> getSignature(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('signatures', where: 'id = ?', whereArgs: [id]);
+
+    if (maps.isNotEmpty) {
+      return Signature.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  Future<List<Signature>> getAllSignatures({String sortBy = 'dateCreated', bool descending = true}) async {
+    final db = await database;
+    final order = descending ? 'DESC' : 'ASC';
+    final List<Map<String, dynamic>> maps = await db.query('signatures', orderBy: '$sortBy $order');
+
+    return List.generate(maps.length, (i) => Signature.fromMap(maps[i]));
   }
 }

@@ -5,8 +5,9 @@ import 'package:flutter_signature_pad/flutter_signature_pad.dart';
 
 class SignaturePadWidget extends StatefulWidget {
   final Function(Uint8List) onSave;
+  final bool allowSaveWithName;
 
-  const SignaturePadWidget({super.key, required this.onSave});
+  const SignaturePadWidget({Key? key, required this.onSave, this.allowSaveWithName = false}) : super(key: key);
 
   @override
   State<SignaturePadWidget> createState() => _SignaturePadWidgetState();
@@ -15,6 +16,13 @@ class SignaturePadWidget extends StatefulWidget {
 class _SignaturePadWidgetState extends State<SignaturePadWidget> {
   final GlobalKey<SignatureState> _signatureKey = GlobalKey<SignatureState>();
   Color _penColor = Colors.black;
+  final TextEditingController _nameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +32,9 @@ class _SignaturePadWidgetState extends State<SignaturePadWidget> {
         const SizedBox(height: 16),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [_buildColorCircle(Colors.black), const SizedBox(width: 12), _buildColorCircle(Colors.blue), const SizedBox(width: 12), _buildColorCircle(Colors.red)]),
         const SizedBox(height: 16),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [ElevatedButton(onPressed: _clearSignature, child: const Text('Clear')), ElevatedButton(onPressed: _saveSignature, child: const Text('Save'))]),
+        if (widget.allowSaveWithName) Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Signature Name', hintText: 'Enter a name for this signature', border: OutlineInputBorder()))),
+        const SizedBox(height: 16),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [ElevatedButton(onPressed: _clearSignature, child: const Text('Clear')), ElevatedButton(onPressed: widget.allowSaveWithName ? _saveSignatureWithName : _saveSignature, child: const Text('Save'))]),
       ],
     );
   }
@@ -55,6 +65,29 @@ class _SignaturePadWidgetState extends State<SignaturePadWidget> {
     final signatureBytes = await _getSignatureBytes();
     if (signatureBytes != null) {
       widget.onSave(signatureBytes);
+    }
+  }
+
+  Future<void> _saveSignatureWithName() async {
+    if (_signatureKey.currentState?.points.isEmpty ?? true) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please draw your signature')));
+      return;
+    }
+
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a name for your signature')));
+      return;
+    }
+
+    final signatureName = _nameController.text.trim();
+    final signatureBytes = await _getSignatureBytes();
+
+    if (signatureBytes != null) {
+      // Pass both the name and bytes to the callback
+      widget.onSave(signatureBytes);
+
+      // Clear the text field after saving
+      _nameController.clear();
     }
   }
 
