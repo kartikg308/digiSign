@@ -1,35 +1,65 @@
 # digisign
 
-A new Flutter project.
+A Flutter web application for digitally signing documents.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+This project is a Flutter web application.
 
-A few resources to get you started if this is your first Flutter project:
+A few resources to get you started if this is your first Flutter web project:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- [Lab: Write your first Flutter web app](https://docs.flutter.dev/get-started/web)
+- [Cookbook: Useful Flutter web samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter development, view the
+For help getting started with Flutter web development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+samples, guidance on web development, and a full API reference.
 
 ## Features
 
-1. **Import a document from storage**:
-   - Users can select and import documents from their device's storage. This feature allows the application to access various document formats (e.g., PDF, DOCX) for signing.
+1. **Select Document via File Picker**:
+    - Users can select documents from their local file system using the web browser's file picker. This feature allows the application to access various document formats (e.g., PDF) for signing.
 
-2. **Create a digital signature and add that signature to the document at a custom location**:
-   - Users can create a digital signature using touch or stylus input. Once created, the signature can be placed at a specific location on the document, allowing for customization of where the signature appears.
-   - Multiple signatures can be created and saved within the application.
-   - Users can add multiple signatures to a single PDF document at different locations.
+2. **Digital Signature Creation and Placement**:
+    - Users can create a digital signature using mouse or stylus input.
+    - The created signature can be placed at any desired location on the document.
+    - Multiple signatures can be created and saved within the application for reuse.
+    - Users can add multiple signatures to a single document at different locations.
 
-3. **Save the document along with the signature of the application**:
-   - After signing, users can save the modified document, which includes both the original content and the added digital signature(s). This ensures that the signed document is preserved for future reference.
+3. **Save Signed Document with Custom Name**:
+    - After signing, users are prompted to provide a new name for the document.
+    - The signed document is then saved directly to the user's downloads folder with the specified name. This ensures that the signed document is easily accessible.
 
-4. **A dashboard where all documents can be viewed and sorted by last updated**:
-   - The application will feature a dashboard that displays all imported documents. Users can view the list of documents and sort them based on the last updated date, making it easy to manage and access recent files.
+## Running the Web App
 
-5. **Select and share multiple documents**:
-   - Users can select multiple documents from the dashboard and share them via various platforms (e.g., email, messaging apps). This feature enhances collaboration and allows for easy distribution of signed documents.
+To run this application in web mode:
+
+1. Make sure you have Flutter installed and set up for web development:
+   ```
+   flutter channel stable
+   flutter upgrade
+   flutter config --enable-web
+   ```
+
+2. Run the application:
+
+   ```
+   flutter run -d chrome
+   ```
+
+3. For production builds:
+
+   ```
+   flutter build web
+   ```
+
+## Privacy and Security
+
+This application processes all documents locally in the browser. No data is sent to any server:
+
+- Files are selected using the browser's file picker and loaded into memory
+- Document signing happens entirely in the client's browser
+- The signed document is downloaded directly to the user's device
+- No data persistence beyond what the user explicitly saves
+
+This ensures complete privacy and security of your sensitive documents.

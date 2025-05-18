@@ -1,9 +1,11 @@
+// ignore_for_file: avoid_print
+
 import 'dart:typed_data';
 import '../models/signature.dart';
-import 'database_service.dart';
+import 'memory_service.dart';
 
 class SignatureService {
-  final DatabaseService _dbService = DatabaseService();
+  final InMemoryService _memoryService = InMemoryService();
 
   // Save a new signature
   Future<Signature?> saveSignature(String name, Uint8List bytes) async {
@@ -11,7 +13,7 @@ class SignatureService {
       final now = DateTime.now();
       final signature = Signature(name: name, bytes: bytes, dateCreated: now);
 
-      final id = await _dbService.insertSignature(signature);
+      final id = await _memoryService.insertSignature(signature);
       return signature.copyWith(id: id);
     } catch (e) {
       print('Error saving signature: $e');
@@ -22,7 +24,7 @@ class SignatureService {
   // Get all saved signatures
   Future<List<Signature>> getAllSignatures() async {
     try {
-      return await _dbService.getAllSignatures();
+      return await _memoryService.getAllSignatures();
     } catch (e) {
       print('Error getting signatures: $e');
       return [];
@@ -32,7 +34,7 @@ class SignatureService {
   // Get a signature by id
   Future<Signature?> getSignature(int id) async {
     try {
-      return await _dbService.getSignature(id);
+      return await _memoryService.getSignature(id);
     } catch (e) {
       print('Error getting signature: $e');
       return null;
@@ -42,7 +44,7 @@ class SignatureService {
   // Delete a signature
   Future<bool> deleteSignature(int id) async {
     try {
-      await _dbService.deleteSignature(id);
+      await _memoryService.deleteSignature(id);
       return true;
     } catch (e) {
       print('Error deleting signature: $e');
@@ -54,7 +56,7 @@ class SignatureService {
   Future<bool> updateSignatureName(Signature signature, String newName) async {
     try {
       final updatedSignature = signature.copyWith(name: newName);
-      await _dbService.updateSignature(updatedSignature);
+      await _memoryService.updateSignature(updatedSignature);
       return true;
     } catch (e) {
       print('Error updating signature name: $e');

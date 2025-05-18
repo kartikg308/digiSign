@@ -32,10 +32,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     try {
-      final documents = await _documentService.getAllDocuments(
-        sortBy: _sortBy,
-        descending: _sortDescending,
-      );
+      final documents = await _documentService.getAllDocuments(sortBy: _sortBy, descending: _sortDescending);
       setState(() {
         _documents = documents;
         _isLoading = false;
@@ -44,14 +41,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error loading documents: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading documents: $e')));
     }
   }
 
   Future<void> _importDocument() async {
-    final document = await _documentService.importDocument();
+    final document = await _documentService.importDocumentWeb();
     if (document != null) {
       _loadDocuments();
     }
@@ -76,13 +71,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _shareSelectedDocuments() async {
     if (_selectedDocuments.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select documents to share')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select documents to share')));
       return;
     }
 
-    await _documentService.shareDocuments(_selectedDocuments);
+    // Share one document at a time (in-memory approach)
+    for (var doc in _selectedDocuments) {
+      await _documentService.shareDocument(doc);
+    }
     _toggleSelectionMode();
   }
 
@@ -94,19 +90,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder:
           (context) => AlertDialog(
             title: const Text('Delete Documents'),
-            content: Text(
-              'Are you sure you want to delete ${_selectedDocuments.length} selected documents?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Delete'),
-              ),
-            ],
+            content: Text('Are you sure you want to delete ${_selectedDocuments.length} selected documents?'),
+            actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')), TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete'))],
           ),
     );
 
@@ -191,25 +176,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('DigiSign'),
         actions: [
-          if (_isSelectionMode)
-            IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: _shareSelectedDocuments,
-            ),
-          if (_isSelectionMode)
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: _deleteSelectedDocuments,
-            ),
-          if (!_isSelectionMode)
-            IconButton(
-              icon: const Icon(Icons.sort),
-              onPressed: _changeSortOrder,
-            ),
-          IconButton(
-            icon: Icon(_isSelectionMode ? Icons.cancel : Icons.select_all),
-            onPressed: _toggleSelectionMode,
-          ),
+          if (_isSelectionMode) IconButton(icon: const Icon(Icons.share), onPressed: _shareSelectedDocuments),
+          if (_isSelectionMode) IconButton(icon: const Icon(Icons.delete), onPressed: _deleteSelectedDocuments),
+          if (!_isSelectionMode) IconButton(icon: const Icon(Icons.sort), onPressed: _changeSortOrder),
+          IconButton(icon: Icon(_isSelectionMode ? Icons.cancel : Icons.select_all), onPressed: _toggleSelectionMode),
         ],
       ),
       body:
@@ -220,27 +190,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.description_outlined,
-                      size: 80,
-                      color: Colors.grey,
-                    ),
+                    const Icon(Icons.description_outlined, size: 80, color: Colors.grey),
                     const SizedBox(height: 16),
-                    const Text(
-                      'No documents yet',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    const Text('No documents yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     const Text('Import your first document to get started'),
                     const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _importDocument,
-                      icon: const Icon(Icons.upload_file),
-                      label: const Text('Import Document'),
-                    ),
+                    ElevatedButton.icon(onPressed: _importDocument, icon: const Icon(Icons.upload_file), label: const Text('Import Document')),
                   ],
                 ),
               )
@@ -251,24 +207,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   final isSelected = _selectedDocuments.contains(document);
 
                   return ListTile(
-                    leading: Icon(
-                      document.isSigned
-                          ? Icons.description
-                          : Icons.description_outlined,
-                      color: document.isSigned ? Colors.green : null,
-                    ),
+                    leading: Icon(document.isSigned ? Icons.description : Icons.description_outlined, color: document.isSigned ? Colors.green : null),
                     title: Text(document.name),
-                    subtitle: Text(
-                      'Last updated: ${DateFormat('MMM dd, yyyy - HH:mm').format(document.lastUpdated)}',
-                    ),
-                    trailing:
-                        _isSelectionMode
-                            ? Checkbox(
-                              value: isSelected,
-                              onChanged:
-                                  (_) => _toggleDocumentSelection(document),
-                            )
-                            : const Icon(Icons.chevron_right),
+                    subtitle: Text('Last updated: ${DateFormat('MMM dd, yyyy - HH:mm').format(document.lastUpdated)}'),
+                    trailing: _isSelectionMode ? Checkbox(value: isSelected, onChanged: (_) => _toggleDocumentSelection(document)) : const Icon(Icons.chevron_right),
                     selected: isSelected,
                     onLongPress: () {
                       if (!_isSelectionMode) {
@@ -280,27 +222,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       if (_isSelectionMode) {
                         _toggleDocumentSelection(document);
                       } else {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) =>
-                                    DocumentViewScreen(document: document),
-                          ),
-                        ).then((_) => _loadDocuments());
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => DocumentViewScreen(document: document))).then((_) => _loadDocuments());
                       }
                     },
                   );
                 },
               ),
-      floatingActionButton:
-          !_isSelectionMode
-              ? FloatingActionButton(
-                onPressed: _importDocument,
-                tooltip: 'Import Document',
-                child: const Icon(Icons.add),
-              )
-              : null,
+      floatingActionButton: !_isSelectionMode ? FloatingActionButton(onPressed: _importDocument, tooltip: 'Import Document', child: const Icon(Icons.add)) : null,
     );
   }
 }
