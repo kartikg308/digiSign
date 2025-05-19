@@ -1,7 +1,8 @@
-// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+// ignore_for_file: avoid_web_libraries_in_flutter
 
 import 'dart:typed_data';
-import 'dart:html' as html; // Import for Blob
+import 'dart:html' as html;
+import 'dart:async';
 
 class Document {
   final int? id;
@@ -49,19 +50,44 @@ class Document {
       return null;
     }
 
-    final reader = html.FileReader();
-    reader.readAsArrayBuffer(blob!);
-    await reader.onLoadEnd.first;
+    try {
+      final reader = html.FileReader();
+      final completer = Completer<Uint8List?>();
 
-    if (reader.result is Uint8List) {
-      print('Successfully read bytes as Uint8List.');
-      return reader.result as Uint8List?;
-    } else if (reader.result is ByteBuffer) {
-      print('Successfully read bytes as ByteBuffer, converting to Uint8List.');
-      return (reader.result as ByteBuffer).asUint8List();
+      reader.onLoadEnd.listen((event) {
+        if (reader.readyState == html.FileReader.DONE) {
+          if (reader.result is Uint8List) {
+            final result = reader.result as Uint8List;
+            print('Successfully read bytes as Uint8List. Size: ${result.length} bytes');
+            completer.complete(result);
+          } else if (reader.result != null) {
+            try {
+              final result = Uint8List.fromList(reader.result as List<int>);
+              print('Converted result to Uint8List. Size: ${result.length} bytes');
+              completer.complete(result);
+            } catch (e) {
+              print('Error converting result to Uint8List: $e');
+              completer.complete(null);
+            }
+          } else {
+            print('Reader result is null after load complete');
+            completer.complete(null);
+          }
+        }
+      });
+
+      reader.onError.listen((event) {
+        print('Error during file reading: ${reader.error?.toString()}');
+        completer.complete(null);
+      });
+
+      // Start reading the blob
+      reader.readAsArrayBuffer(blob!);
+
+      return await completer.future;
+    } catch (e) {
+      print('Error reading blob: $e');
+      return null;
     }
-
-    print('Failed to read bytes from blob, result is of unexpected type: ${reader.result.runtimeType}.');
-    return null;
   }
 }

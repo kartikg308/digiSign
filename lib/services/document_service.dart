@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print, deprecated_member_use
+// ignore_for_file: avoid_print, deprecated_member_use, avoid_web_libraries_in_flutter
 
 import 'dart:ui';
 import 'dart:typed_data';
@@ -52,7 +52,7 @@ class DocumentService {
   }
 
   // Add signature to document from raw bytes - working with memory
-  Future<Document?> addSignatureToDocument(Document document, List<int> signatureImageBytes, Offset position) async {
+  Future<Document?> addSignatureToDocument(Document document, List<int> signatureImageBytes, Offset position, {int pageIndex = 0, double width = 100, double height = 50}) async {
     try {
       Uint8List? documentBytes = await document.getBytes();
       if (documentBytes == null) {
@@ -66,16 +66,33 @@ class DocumentService {
       final PdfBitmap image = PdfBitmap(signatureImageBytes);
 
       // Get the page to add signature
-      PdfPage page = pdfDocument.pages[0];
+      PdfPage page;
+      if (pageIndex >= 0 && pageIndex < pdfDocument.pages.count) {
+        page = pdfDocument.pages[pageIndex];
+      } else {
+        page = pdfDocument.pages[0];
+      }
+
+      // Scale position based on page size (PDF coordinates)
+      final double pageWidth = page.getClientSize().width;
+      final double pageHeight = page.getClientSize().height;
+
+      // Position is relative to the PDF viewer, need to convert to PDF coordinates
+      double pdfX = (position.dx / 100) * pageWidth;
+      double pdfY = (position.dy / 100) * pageHeight;
+
+      // Ensure the signature stays within the page boundaries
+      pdfX = pdfX.clamp(0, pageWidth - width);
+      pdfY = pdfY.clamp(0, pageHeight - height);
 
       // Draw the signature on the page at the specified position
       page.graphics.drawImage(
         image,
         Rect.fromLTWH(
-          position.dx,
-          position.dy,
-          100, // Width of signature
-          50, // Height of signature
+          pdfX,
+          pdfY,
+          width, // Width of signature
+          height, // Height of signature
         ),
       );
 
@@ -100,60 +117,60 @@ class DocumentService {
   }
 
   // Add saved signature to document
-  Future<Document?> addSavedSignatureToDocument(Document document, model.Signature signature, Offset position) async {
-    return addSignatureToDocument(document, signature.bytes, position);
+  Future<Document?> addSavedSignatureToDocument(Document document, model.Signature signature, Offset position, {int pageIndex = 0}) async {
+    return addSignatureToDocument(document, signature.bytes, position, pageIndex: pageIndex);
   }
 
   // Add multiple signatures to document
-  Future<Document?> addMultipleSignaturesToDocument(Document document, List<Map<String, dynamic>> signatures) async {
+  Future<Document?> addMultipleSignaturesToDocument(Document document, List<Map<String, dynamic>> signaturesDataList) async {
     try {
       Uint8List? documentBytes = await document.getBytes();
       if (documentBytes == null) {
         throw Exception('Document bytes not available from blob');
       }
 
-      // Load the PDF document from bytes
       final PdfDocument pdfDocument = PdfDocument(inputBytes: documentBytes);
 
-      // Add each signature to the document
-      for (var signatureData in signatures) {
+      for (var signatureData in signaturesDataList) {
         final Uint8List sigBytes = signatureData['bytes'];
-        final Offset sigPosition = signatureData['position'];
+        final Offset pdfTopLeftPosition = signatureData['pdfPosition'];
+        final double pdfWidth = signatureData['pdfWidth'];
+        final double pdfHeight = signatureData['pdfHeight'];
         final int pageIndex = signatureData['pageIndex'] ?? 0;
 
-        // Create a new PDF bitmap image
         final PdfBitmap image = PdfBitmap(sigBytes);
 
-        // Get the page to add signature (default to first page if invalid index)
         PdfPage page;
         if (pageIndex >= 0 && pageIndex < pdfDocument.pages.count) {
           page = pdfDocument.pages[pageIndex];
         } else {
-          page = pdfDocument.pages[0];
+          page = pdfDocument.pages[0]; // Default to first page if index is invalid
         }
 
-        // Draw the signature on the page at the specified position
-        page.graphics.drawImage(
-          image,
-          Rect.fromLTWH(
-            sigPosition.dx,
-            sigPosition.dy,
-            100, // Width of signature
-            50, // Height of signature
-          ),
-        );
+        // Get actual page size to properly position the signature
+        final double pageWidth = page.getClientSize().width;
+        final double pageHeight = page.getClientSize().height;
+
+        // Adjust coordinates if we're using standard 612x792 estimation in the document_view_screen
+        double x = pdfTopLeftPosition.dx;
+        double y = pdfTopLeftPosition.dy;
+        double width = pdfWidth;
+        double height = pdfHeight;
+
+        // Ensure the signature stays within page boundaries
+        x = x.clamp(0, pageWidth - width);
+        y = y.clamp(0, pageHeight - height);
+
+        // Draw the signature on the page using the provided PDF coordinates and dimensions
+        page.graphics.drawImage(image, Rect.fromLTWH(x, y, width, height));
       }
 
-      // Save the document to bytes
       final List<int> newPdfBytesList = await pdfDocument.save();
-
-      // Dispose the document
       pdfDocument.dispose();
 
       final newPdfBytes = Uint8List.fromList(newPdfBytesList);
       final newBlob = html.Blob([newPdfBytes], 'application/pdf');
 
-      // Update document in memory service
       final updatedDocument = document.copyWith(lastUpdated: DateTime.now(), isSigned: true, blob: newBlob);
       await _memoryService.updateDocument(updatedDocument);
 
@@ -165,21 +182,19 @@ class DocumentService {
   }
 
   // Add multiple signatures to document bytes
-  Future<Uint8List?> addMultipleSignaturesToDocumentBytes(Uint8List documentBytes, List<Map<String, dynamic>> signatures) async {
+  Future<Uint8List?> addMultipleSignaturesToDocumentBytes(Uint8List documentBytes, List<Map<String, dynamic>> signaturesDataList) async {
     try {
-      // Load the PDF document from bytes
       final PdfDocument pdfDocument = PdfDocument(inputBytes: documentBytes);
 
-      // Add each signature to the document
-      for (var signatureData in signatures) {
+      for (var signatureData in signaturesDataList) {
         final Uint8List sigBytes = signatureData['bytes'];
-        final Offset sigPosition = signatureData['position'];
+        final Offset pdfTopLeftPosition = signatureData['pdfPosition'];
+        final double pdfWidth = signatureData['pdfWidth'];
+        final double pdfHeight = signatureData['pdfHeight'];
         final int pageIndex = signatureData['pageIndex'] ?? 0;
 
-        // Create a new PDF bitmap image
         final PdfBitmap image = PdfBitmap(sigBytes);
 
-        // Get the page to add signature (default to first page if invalid index)
         PdfPage page;
         if (pageIndex >= 0 && pageIndex < pdfDocument.pages.count) {
           page = pdfDocument.pages[pageIndex];
@@ -187,27 +202,28 @@ class DocumentService {
           page = pdfDocument.pages[0];
         }
 
-        // Draw the signature on the page at the specified position
-        page.graphics.drawImage(
-          image,
-          Rect.fromLTWH(
-            sigPosition.dx,
-            sigPosition.dy,
-            100, // Width of signature
-            50, // Height of signature
-          ),
-        );
+        // Get actual page size to properly position the signature
+        final double pageWidth = page.getClientSize().width;
+        final double pageHeight = page.getClientSize().height;
+
+        // Adjust coordinates if we're using standard 612x792 estimation
+        double x = pdfTopLeftPosition.dx;
+        double y = pdfTopLeftPosition.dy;
+        double width = pdfWidth;
+        double height = pdfHeight;
+
+        // Ensure the signature stays within page boundaries
+        x = x.clamp(0, pageWidth - width);
+        y = y.clamp(0, pageHeight - height);
+
+        page.graphics.drawImage(image, Rect.fromLTWH(x, y, width, height));
       }
 
-      // Save the document to bytes
       final List<int> newPdfBytes = await pdfDocument.save();
-
-      // Dispose the document
       pdfDocument.dispose();
-
       return Uint8List.fromList(newPdfBytes);
     } catch (e) {
-      print('Error adding multiple signatures to document bytes: $e');
+      print('Error adding multiple signatures to bytes: $e');
       return null;
     }
   }
@@ -245,6 +261,35 @@ class DocumentService {
       return true;
     } catch (e) {
       print('Error sharing document: $e');
+      return false;
+    }
+  }
+
+  // Download document (specifically for web)
+  Future<bool> downloadDocument(Document document, {String? fileName}) async {
+    try {
+      Uint8List? documentBytes = await document.getBytes();
+      if (documentBytes == null) {
+        print('Error downloading document: Bytes not available from blob');
+        return false;
+      }
+
+      final name = fileName ?? document.name;
+      final blob = html.Blob([documentBytes], 'application/pdf');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor =
+          html.AnchorElement(href: url)
+            ..setAttribute('download', name)
+            ..style.display = 'none';
+
+      html.document.body?.append(anchor);
+      anchor.click();
+      anchor.remove();
+      html.Url.revokeObjectUrl(url);
+
+      return true;
+    } catch (e) {
+      print('Error downloading document: $e');
       return false;
     }
   }

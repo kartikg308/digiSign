@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 // import 'screens/dashboard_screen.dart'; // No longer the initial screen
 import 'screens/signatures_screen.dart';
 import 'screens/file_upload_screen.dart'; // New screen for file uploading
 
 void main() {
+  // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Disable error banner in debug mode
+  if (kDebugMode) {
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      return Container(alignment: Alignment.center, child: Text('Error: ${details.exception}', style: const TextStyle(color: Colors.red)));
+    };
+  }
+
   runApp(const MyApp());
 }
 
@@ -15,6 +26,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'DigiSign',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -33,8 +45,17 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.light),
         useMaterial3: true,
+        inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder(), filled: true),
+        cardTheme: CardTheme(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 3),
+        elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16), textStyle: const TextStyle(fontSize: 16))),
       ),
-      darkTheme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark), useMaterial3: true),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
+        useMaterial3: true,
+        inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder(), filled: true),
+        cardTheme: CardTheme(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 3),
+        elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16), textStyle: const TextStyle(fontSize: 16))),
+      ),
       themeMode: ThemeMode.system,
       initialRoute: '/', // Changed to FileUploadScreen
       routes: {
